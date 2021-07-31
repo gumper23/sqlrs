@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"os"
+	"strings"
+	"text/tabwriter"
 	"time"
 )
 
@@ -40,7 +43,6 @@ func (rs *Resultset) QueryRows(db *sql.DB, query string) error {
 	for _, col := range cols {
 		rs.Cols = append(rs.Cols, col)
 	}
-
 	vals := make([]interface{}, len(rs.Cols))
 	for i := 0; i < len(rs.Cols); i++ {
 		vals[i] = new(interface{})
@@ -99,4 +101,42 @@ func (rs *Resultset) QueryRowString(db *sql.DB, query string) (result string, er
 	}
 	result = rs.Rows[0][rs.Cols[0]]
 	return
+}
+
+// Vprint vertically prints the resultset.
+func (rs *Resultset) Vprint() {
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 4, 1, ' ', 0)
+
+	for _, row := range rs.Rows {
+		for _, col := range rs.Cols {
+			out := strings.Replace(row[col], "\t", " ", -1)
+			out = strings.Replace(out, "%", "%%", -1)
+			fmt.Fprintf(w, "%s:\t%s\n", col, out)
+		}
+		fmt.Fprintln(w, "")
+	}
+	w.Flush()
+}
+
+// Hprint horizontally prints the resultset.
+func (rs *Resultset) Hprint() {
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 4, 1, ' ', 0)
+
+	header := ""
+	for _, col := range rs.Cols {
+		header = header + fmt.Sprintf("%s\t", col)
+	}
+	fmt.Fprintln(w, header)
+
+	for _, row := range rs.Rows {
+		out := ""
+		for _, col := range rs.Cols {
+			val := strings.Replace(row[col], "\t", " ", -1)
+			out = out + fmt.Sprintf("%s\t", val)
+		}
+		fmt.Fprintln(w, out)
+	}
+	w.Flush()
 }
